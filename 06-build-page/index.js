@@ -6,6 +6,8 @@ const {
   mkdir,
   copyFile,
   stat,
+  access,
+  rm,
 } = require("fs/promises");
 
 async function createCssBundle() {
@@ -55,6 +57,12 @@ async function createHtml() {
 async function createDir() {
   const folderPath = path.join(__dirname, "assets");
   const copyBaseFolderPath = path.join(__dirname, "project-dist", "assets");
+  try {
+    await access(copyBaseFolderPath);
+    await rm(copyBaseFolderPath, { recursive: true });
+  } catch (err) {
+    console.log(err);
+  }
   try {
     const folderArray = [folderPath];
     while (folderArray.length > 0) {
