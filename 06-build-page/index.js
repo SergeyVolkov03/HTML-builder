@@ -54,41 +54,34 @@ async function createHtml() {
   await writeFile(htmlBundlePath, data);
 }
 
+async function copyFolders(folder, copyFolder) {
+  const files = await readdir(folder);
+  for (let file of files) {
+    const fileStat = await stat(path.join(folder, file));
+    if (fileStat.isFile()) {
+      await copyFile(path.join(folder, file), path.join(copyFolder, file));
+    } else {
+      await mkdir(path.join(copyFolder, file));
+      await copyFolders(path.join(folder, file), path.join(copyFolder, file));
+    }
+  }
+}
+
 async function createDir() {
   const folderPath = path.join(__dirname, "assets");
   const copyBaseFolderPath = path.join(__dirname, "project-dist", "assets");
+  const distPath = path.join(__dirname, "project-dist");
+  try {
+    await access(distPath);
+  } catch (err) {
+    await mkdir(distPath);
+  }
   try {
     await access(copyBaseFolderPath);
     await rm(copyBaseFolderPath, { recursive: true });
-  } catch (err) {
-    console.log(err);
-  }
-  try {
-    const folderArray = [folderPath];
-    while (folderArray.length > 0) {
-      const currentFolder = folderArray.pop();
-      const arrayPath = currentFolder.split("\\");
-      const newPathPart = arrayPath.slice(arrayPath.indexOf("assets") + 1);
-      const copyFolderPath = path.join(
-        copyBaseFolderPath,
-        newPathPart.join("\\")
-      );
-      await mkdir(copyFolderPath, { recursive: true });
-      const files = await readdir(currentFolder);
-      for (const file of files) {
-        const statFile = await stat(path.join(currentFolder, file));
-        if (statFile.isFile()) {
-          const filePath = path.join(folderPath, newPathPart.join("\\"), file);
-          const copyFilePath = path.join(copyFolderPath, file);
-          await copyFile(filePath, copyFilePath);
-        } else {
-          folderArray.push(path.join(currentFolder, file));
-        }
-      }
-    }
-  } catch (err) {
-    console.error(err);
-  }
+  } catch (err) {}
+  await mkdir(copyBaseFolderPath);
+  copyFolders(folderPath, copyBaseFolderPath);
 }
 
 createCssBundle();
